@@ -1,7 +1,7 @@
 {
-  "name": "goit-react-hw-03-image-finder",
+  "name": "goit-react-hw-04-hooks-images",
   "version": "0.1.0",
-  "homepage": "https://playsoksana.github.io/goit-react-hw-03-image-finder",
+  "homepage": "https://playsoksana.github.io/goit-react-hw-04-hooks-images",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.14.1",
