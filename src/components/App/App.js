@@ -1,5 +1,5 @@
 import '../../index.css';
-import React, { PureComponent } from 'react';
+import { useState, useEffect } from 'react';
 
 import { css } from '@emotion/react';
 import BeatLoader from 'react-spinners/BeatLoader';
@@ -9,68 +9,73 @@ import 'react-toastify/dist/ReactToastify.css';
 import Searchbar from '../Searchbar/Searchbar';
 import ImageGallery from '../ImageGallery';
 import Button from '../Button/Button';
-import api from '../helpers/galleryApi';
+import api from '../../helpers/galleryApi';
 import Modal from '../Modal';
 import Error from '../Error';
 
-class App extends PureComponent {
-  state = {
+const App = () => {
+  const [state, setState] = useState({
     searchSubject: '',
     collectionImages: [],
-    page: 1,
+    page: 0,
     showModal: false,
     imgForModal: {
       url: null,
       alt: null,
     },
+
     status: 'idle',
     buttonVisible: false,
-  };
+  });
 
-  componentDidUpdate = (prevProps, prevState) => {
-    const { page, searchSubject } = this.state;
-    if (page !== prevState.page) {
-      this.setState({
-        status: 'loading',
-      });
-      try {
-        (async () => {
-          const resolveParse = await api(searchSubject, page);
-          this.setState(prevState => ({
-            collectionImages: [
-              ...prevState.collectionImages,
-              ...resolveParse.hits,
-            ],
-            status: 'resolved',
-            buttonVisible:
-              Math.ceil(resolveParse.total / 12) === page ? false : true,
-          }));
-        })();
-      } catch (error) {
-        this.setState({
-          status: 'error',
-          collectionImages: [],
-          buttonVisible: false,
-        });
-      }
+  useEffect(() => {
+    if (state.page === 0) {
+      return;
     }
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: 'smooth',
-    });
-   
-  };
 
-  onSubmitForm = async ev => {
-    const { target } = ev;
+    setState(s => ({
+      ...s,
+      status: 'loading',
+    }));
 
-    const {
-      search: { value },
-    } = target;
-    const { searchSubject, page } = this.state;
+    (async () => {
+      try {
+        const resolveParse = await api(state.searchSubject, state.page);
 
+        if (resolveParse.total > 0) {
+          setState(s => ({
+            ...s,
+            collectionImages: [...s.collectionImages, ...resolveParse.hits],
+            buttonVisible:
+              Math.ceil(resolveParse.total / 12) === state.page ? false : true,
+            status: 'resolved',
+          }));
+          window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: 'smooth',
+          });
+          return;
+        }
+        Promise.reject(new Error('Nothing found'));
+      } catch (error) {
+        setState(s => ({
+          ...s,
+          status: 'error',
+          buttonVisible: false,
+        }));
+      }
+    })();
+  }, [state.page, state.searchSubject]);
+
+  async function onSubmitForm(ev) {
     ev.preventDefault();
-    if (searchSubject.toLowerCase() === value.toLowerCase()) {
+    const {
+      target: {
+        search: { value },
+      },
+    } = ev;
+
+    if (state.searchSubject.toLowerCase() === value.toLowerCase()) {
       return;
     }
 
@@ -78,103 +83,75 @@ class App extends PureComponent {
       toast.error('Your string consists of only spaces, enter a valid string!');
       return;
     }
-
-    this.setState({
+    
+    setState(s => ({
+      ...s,
       page: 1,
       searchSubject: value,
-      status: 'loading',
-    });
+      collectionImages: [],
+    }));
+  }
 
-    try {
-      const { hits, total } = await api(value, page);
-
-      if (total > 0) {
-        this.setState({
-          collectionImages: [...hits],
-          status: 'resolved',
-          buttonVisible: total > 13,
-        });
-        return;
-      }
-      Promise.reject(new Error('Nothing found'));
-    } catch (error) {
-      this.setState({
-        status: 'error',
-        collectionImages: [],
-        buttonVisible: false,
-      });
-    }
-  };
-
-  increment = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
+  function increment() {
+    setState(s => ({
+      ...s,
+      page: s.page + 1,
       buttonVisible: false,
     }));
-  };
+  }
 
-  openModal = ({ target, currentTarget }) => {
+  function openModal({ target, currentTarget }) {
     if (target === currentTarget) {
       return;
     }
 
-    this.setState({
-      showModal: true,
+    setState(s => ({
+      ...s,
       imgForModal: {
         url: target.getAttribute('data'),
         alt: target.getAttribute('alt'),
       },
-    });
-  };
-
-  closeModal = () => {
-   
-      this.setState({
-        showModal: false,
-      });
-    
-  };
-
-  render() {
-    const override = css`
-      display: block;
-      margin-left: 50%;
-      border-color: blue;
-    `;
-
-    const { onSubmitForm, openModal, closeModal, increment } = this;
-    const {
-      collectionImages,
-      showModal,
-      imgForModal: { url, alt },
-      status,
-      buttonVisible,
-    } = this.state;
-
-    return (
-      <div>
-        <Searchbar onSubmit={onSubmitForm} />
-        
-        <ImageGallery
-          openModal={openModal}
-          collectionImages={collectionImages}
-        />
-        {buttonVisible && <Button imageUpload={increment} text="Load more" />}
-
-     
-        {status === 'loading' && (
-          <BeatLoader loading={true} css={override} size={40} />
-        )}
-        {showModal && (
-          <Modal closeModal={closeModal}>
-            <img src={url} alt={alt}></img>
-          </Modal>
-        )}
-        {status === 'error' && <Error />}
-        <ToastContainer />
-      </div>
-    );
+      showModal: true,
+    }));
   }
-}
+
+  function closeModal() {
+    setState(s => ({ ...s, showModal: false }));
+  }
+
+  const override = css`
+    display: block;
+    margin-left: 50%;
+    border-color: blue;
+  `;
+
+  return (
+    <div>
+      <Searchbar onSubmit={onSubmitForm} />
+
+      <ImageGallery
+        openModal={openModal}
+        collectionImages={state.collectionImages}
+      />
+
+      {state.buttonVisible && (
+        <Button imageUpload={increment} text="Load more" />
+      )}
+
+      {state.status === 'loading' && (
+        <BeatLoader loading={true} css={override} size={40} />
+      )}
+
+      {state.showModal && (
+        <Modal closeModal={closeModal}>
+          <img src={state.imgForModal.url} alt={state.imgForModal.alt}></img>
+        </Modal>
+      )}
+      {state.status === 'error' && <Error />}
+      <ToastContainer />
+    </div>
+  );
+};
+
 
 export default App;
