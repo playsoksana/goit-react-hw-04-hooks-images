@@ -56,6 +56,7 @@ const App = () => {
           });
           return;
         }
+       
         Promise.reject(new Error('Nothing found'));
       } catch (error) {
         setState(s => ({
@@ -81,9 +82,9 @@ const App = () => {
 
     if (!value.trim().length) {
       toast.error('Your string consists of only spaces, enter a valid string!');
+
       return;
     }
-    
     setState(s => ({
       ...s,
       page: 1,
