@@ -56,8 +56,8 @@ const App = () => {
           });
           return;
         }
-       
-        Promise.reject(new Error('Nothing found'));
+        throw new Error('Nothing found');
+       // Promise.reject(new Error('Nothing found'));
       } catch (error) {
         setState(s => ({
           ...s,
