@@ -12,4 +12,4 @@ Button.propTypes = {
   imageUpload: PropTypes.func.isRequired,
   text: PropTypes.string.isRequired
 };
-export default Button;
+export default React.memo(Button);

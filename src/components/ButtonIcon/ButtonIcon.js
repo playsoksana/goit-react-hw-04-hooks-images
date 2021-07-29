@@ -11,4 +11,4 @@ const ButtonIcon = ({ children }) => (
 ButtonIcon.propTypes = {
   children: PropTypes.node.isRequired,
 };
-export default ButtonIcon;
+export default React.memo(ButtonIcon) ;

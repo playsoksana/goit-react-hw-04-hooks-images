@@ -14,145 +14,153 @@ import Modal from '../Modal';
 import Error from '../Error';
 
 const App = () => {
-  const [state, setState] = useState({
-    searchSubject: '',
-    collectionImages: [],
-    page: 0,
-    showModal: false,
-    imgForModal: {
-      url: null,
-      alt: null,
-    },
+    const [state, setState] = useState({
+        searchSubject: '',
+        collectionImages: [],
+        page: 0,
+        showModal: false,
+        imgForModal: {
+            url: null,
+            alt: null,
+        },
 
-    status: 'idle',
-    buttonVisible: false,
-  });
+        status: 'idle',
+        buttonVisible: false,
+    });
 
-  useEffect(() => {
-    if (state.page === 0) {
-      return;
-    }
-
-    setState(s => ({
-      ...s,
-      status: 'loading',
-    }));
-
-    (async () => {
-      try {
-        const resolveParse = await api(state.searchSubject, state.page);
-
-        if (resolveParse.total > 0) {
-          setState(s => ({
-            ...s,
-            collectionImages: [...s.collectionImages, ...resolveParse.hits],
-            buttonVisible:
-              Math.ceil(resolveParse.total / 12) === state.page ? false : true,
-            status: 'resolved',
-          }));
-          window.scrollTo({
-            top: document.documentElement.scrollHeight,
-            behavior: 'smooth',
-          });
-          return;
+    useEffect(() => {
+        if (state.page === 0) {
+            return;
         }
-        throw new Error('Nothing found');
-       // Promise.reject(new Error('Nothing found'));
-      } catch (error) {
+
         setState(s => ({
-          ...s,
-          status: 'error',
-          buttonVisible: false,
+            ...s,
+            status: 'loading',
         }));
-      }
-    })();
-  }, [state.page, state.searchSubject]);
 
-  async function onSubmitForm(ev) {
-    ev.preventDefault();
-    const {
-      target: {
-        search: { value },
-      },
-    } = ev;
+        (async () => {
+            try {
+                const resolveParse = await api(state.searchSubject, state.page);
+                if (resolveParse.total === 0) {
+                    throw Error('Nothing found');
+                }
 
-    if (state.searchSubject.toLowerCase() === value.toLowerCase()) {
-      return;
+                setState(s => ({
+                    ...s,
+                    collectionImages: [
+                        ...s.collectionImages,
+                        ...resolveParse.hits,
+                    ],
+                    buttonVisible:
+                        Math.ceil(resolveParse.total / 12) === state.page
+                            ? false
+                            : true,
+                    status: 'resolved',
+                }));
+                window.scrollTo({
+                    top: document.documentElement.scrollHeight,
+                    behavior: 'smooth',
+                });
+                return;
+            } catch (error) {
+                setState(s => ({
+                    ...s,
+                    status: 'error',
+                    buttonVisible: false,
+                }));
+            }
+        })();
+    }, [state.page, state.searchSubject]);
+
+    async function onSubmitForm(ev) {
+        ev.preventDefault();
+        const {
+            target: {
+                search: { value },
+            },
+        } = ev;
+
+        if (state.searchSubject.toLowerCase() === value.toLowerCase()) {
+            return;
+        }
+
+        if (!value.trim().length) {
+            toast.error(
+                'Your string consists of only spaces, enter a valid string!',
+            );
+
+            return;
+        }
+        setState(s => ({
+            ...s,
+            page: 1,
+            searchSubject: value,
+            collectionImages: [],
+        }));
     }
 
-    if (!value.trim().length) {
-      toast.error('Your string consists of only spaces, enter a valid string!');
-
-      return;
-    }
-    setState(s => ({
-      ...s,
-      page: 1,
-      searchSubject: value,
-      collectionImages: [],
-    }));
-  }
-
-  function increment() {
-    setState(s => ({
-      ...s,
-      page: s.page + 1,
-      buttonVisible: false,
-    }));
-  }
-
-  function openModal({ target, currentTarget }) {
-    if (target === currentTarget) {
-      return;
+    function increment() {
+        setState(s => ({
+            ...s,
+            page: s.page + 1,
+            buttonVisible: false,
+        }));
     }
 
-    setState(s => ({
-      ...s,
-      imgForModal: {
-        url: target.getAttribute('data'),
-        alt: target.getAttribute('alt'),
-      },
-      showModal: true,
-    }));
-  }
+    function openModal({ target, currentTarget }) {
+        if (target === currentTarget) {
+            return;
+        }
 
-  function closeModal() {
-    setState(s => ({ ...s, showModal: false }));
-  }
+        setState(s => ({
+            ...s,
+            imgForModal: {
+                url: target.getAttribute('data'),
+                alt: target.getAttribute('alt'),
+            },
+            showModal: true,
+        }));
+    }
 
-  const override = css`
-    display: block;
-    margin-left: 50%;
-    border-color: blue;
-  `;
+    function closeModal() {
+        setState(s => ({ ...s, showModal: false }));
+    }
 
-  return (
-    <div>
-      <Searchbar onSubmit={onSubmitForm} />
+    const override = css`
+        display: block;
+        margin-left: 50%;
+        border-color: blue;
+    `;
 
-      <ImageGallery
-        openModal={openModal}
-        collectionImages={state.collectionImages}
-      />
+    return (
+        <div>
+            <Searchbar onSubmit={onSubmitForm} />
 
-      {state.buttonVisible && (
-        <Button imageUpload={increment} text="Load more" />
-      )}
+            <ImageGallery
+                openModal={openModal}
+                collectionImages={state.collectionImages}
+            />
 
-      {state.status === 'loading' && (
-        <BeatLoader loading={true} css={override} size={40} />
-      )}
+            {state.buttonVisible && (
+                <Button imageUpload={increment} text="Load more" />
+            )}
 
-      {state.showModal && (
-        <Modal closeModal={closeModal}>
-          <img src={state.imgForModal.url} alt={state.imgForModal.alt}></img>
-        </Modal>
-      )}
-      {state.status === 'error' && <Error />}
-      <ToastContainer />
-    </div>
-  );
+            {state.status === 'loading' && (
+                <BeatLoader loading={true} css={override} size={40} />
+            )}
+
+            {state.showModal && (
+                <Modal closeModal={closeModal}>
+                    <img
+                        src={state.imgForModal.url}
+                        alt={state.imgForModal.alt}
+                    ></img>
+                </Modal>
+            )}
+            {state.status === 'error' && <Error />}
+            <ToastContainer />
+        </div>
+    );
 };
-
 
 export default App;

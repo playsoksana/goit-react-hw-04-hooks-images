@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import ButtonIcon from '../ButtonIcon';
 import styles from './Searchbar.module.css';
 import PropTypes from 'prop-types';
@@ -43,4 +43,4 @@ Searchbar.propTypes = {
   onSubmit: PropTypes.func.isRequired,
 };
 
-export default Searchbar;
+export default React.memo(Searchbar);
