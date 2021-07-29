@@ -1,5 +1,5 @@
 import '../../index.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import { css } from '@emotion/react';
 import BeatLoader from 'react-spinners/BeatLoader';
@@ -107,11 +107,10 @@ const App = () => {
         }));
     }
 
-    function openModal({ target, currentTarget }) {
+    const openModal = useCallback(({ target, currentTarget }) => {
         if (target === currentTarget) {
             return;
         }
-
         setState(s => ({
             ...s,
             imgForModal: {
@@ -120,7 +119,7 @@ const App = () => {
             },
             showModal: true,
         }));
-    }
+    }, []);
 
     function closeModal() {
         setState(s => ({ ...s, showModal: false }));
